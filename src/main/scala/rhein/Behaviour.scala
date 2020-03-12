@@ -40,6 +40,10 @@ class Behaviour[T](var event: Event[T], var value: Option[T]) {
     event
   }
 
+  def map[B](f: T => B): Behaviour[B] = {
+    changes().map(f).hold(f.apply(sampleNoTrans()))
+  }
+
   def values(): Event[T] = {
     new Event[T]() {
       override def listen(
