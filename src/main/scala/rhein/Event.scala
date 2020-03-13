@@ -68,19 +68,9 @@ class Event[T]() {
 
   final def hold(initValue: T): Behaviour[T] = {
     Transaction.evaluate(trans => new Behaviour[T](this, Some(initValue)))
-    // new Behaviour[T](this, Some(initValue))
   }
 
   def snapshot[B, C](b: Behaviour[B], f: (T, B) => C): Event[C] = {
-
-    // val ev = this
-    // val out = new EventSink[C]() {
-    //   protected override def sampleNow(): IndexedSeq[T] = {
-    //     val oi = ev.sampleNow()
-    //     oi.map(x => f.apply(x, b.sampleNoTrans))
-    //     // oi.map(x => f.apply(x, b.sampleNoTrans()))
-    //   }
-    // }
     val ev = this
     val out = new EventSink[C]() {
       override def sampleNow() =
