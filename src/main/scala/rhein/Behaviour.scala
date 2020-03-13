@@ -14,10 +14,13 @@ class Behaviour[T](var event: Event[T], var value: Option[T]) {
         Node.NullNode,
         trans1,
         (trans2: Transaction, a: T) => {
-          if (this.valueUpdate == null) {
-            trans2.last(() => {
-              this.value = this.valueUpdate
-              this.valueUpdate = None
+          if (Behaviour.this.valueUpdate.isEmpty) {
+            trans2.last(new Runnable() {
+              def run() {
+                Behaviour.this.value = valueUpdate
+                Behaviour.this.valueUpdate = None
+              }
+
             })
           }
           this.valueUpdate = Some(a)

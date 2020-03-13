@@ -16,6 +16,7 @@ class Event[T]() {
   protected var finalizers = new ListBuffer[Listener]()
   var node: Node = new Node(0L);
   protected def sampleNow(): IndexedSeq[T] = IndexedSeq()
+  protected val firings = ListBuffer[T]()
 
   final class ListenerImplementation[T](
       event: Event[T],
@@ -65,15 +66,32 @@ class Event[T]() {
     this
   }
 
-  def hold(initValue: T): Behaviour[T] = {
-    new Behaviour[T](this, Some(initValue))
+  final def hold(initValue: T): Behaviour[T] = {
+    Transaction.evaluate(trans => new Behaviour[T](this, Some(initValue)))
+    // new Behaviour[T](this, Some(initValue))
   }
 
   def snapshot[B, C](b: Behaviour[B], f: (T, B) => C): Event[C] = {
-    val out: EventSink[C] = new EventSink[C]();
 
-    val l: Listener = listen(out.node, (trans: Transaction, a: T) => {
-      out.send(trans, f.apply(a, b.sampleNoTrans))
+    // val ev = this
+    // val out = new EventSink[C]() {
+    //   protected override def sampleNow(): IndexedSeq[T] = {
+    //     val oi = ev.sampleNow()
+    //     oi.map(x => f.apply(x, b.sampleNoTrans))
+    //     // oi.map(x => f.apply(x, b.sampleNoTrans()))
+    //   }
+    // }
+    val ev = this
+    val out = new EventSink[C]() {
+      override def sampleNow() =
+        ev.sampleNow().map(a => f.apply(a, b.sampleNoTrans()))
+    }
+
+    val l: Listener = listen(out.node, new TransactionHandler[T]() {
+      def run(trans: Transaction, a: T) {
+        out.send(trans, f(a, b.sampleNoTrans()))
+        println(b.sampleNoTrans)
+      }
     })
 
     out.addCleanup(l)

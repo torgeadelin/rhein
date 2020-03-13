@@ -56,5 +56,6 @@ object Transaction {
     } finally {
       trans.close()
     }
+
   }
 }

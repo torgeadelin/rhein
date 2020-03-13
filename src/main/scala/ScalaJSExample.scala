@@ -55,7 +55,7 @@ object ScalaJSExample {
       ).render
     )
 
-    //Merge example
+    // Merge example
     val buttonA = new Button("A", "btnA")
     val buttonB = new Button("B", "btnB")
     val merged: Event[String] = Event.merge(
@@ -70,6 +70,45 @@ object ScalaJSExample {
           buttonA.domElement,
           buttonB.domElement,
           span((cls := "ml-2"))(textField4.domElement)
+        )
+      ).render
+    )
+
+    // Merge and Hold examples
+    val buttonRed = new Button("Red", "btn-danger")
+    val buttonGreen = new Button("Green", "btn-success")
+    val buttonsMerged: Event[String] = Event.merge(
+      buttonRed.eventClicked.map(_ => "Red"),
+      buttonGreen.eventClicked.map(_ => "Green")
+    )
+    val labelRedOrGreen = new Label(buttonsMerged.hold(""))
+    dom.document.body.appendChild(
+      div(cls := "mt-3")(
+        h1("Merge and hold example"),
+        div(cls := "d-flex align-items-center")(
+          buttonRed.domElement,
+          buttonGreen.domElement,
+          span((cls := "ml-2"))(labelRedOrGreen.domElement)
+        )
+      ).render
+    )
+
+    // Snapshot
+    val translateButton = new Button("Translate", "btnTranslate")
+    val english =
+      new TextField("Translate")
+    val snapshotVal: Event[String] = translateButton.eventClicked.snapshot(
+      english.text,
+      (u, txt: String) => txt.trim.replaceAll(" |$", "us ").trim
+    )
+    val latin = new Label(snapshotVal.hold(""))
+    dom.document.body.appendChild(
+      div(cls := "mt-3")(
+        h1("Shanpshot"),
+        div(cls := "d-flex align-items-center")(
+          translateButton.domElement,
+          english.domElement,
+          span((cls := "ml-2"))(latin.domElement)
         )
       ).render
     )

@@ -10,10 +10,22 @@ class TextField(
     var enabled: Behaviour[Boolean]
 ) {
 
-  var sUserChanges: Event[String] = new Event()
-  var text: Behaviour[String] = new Behaviour(Some(initialValue))
+  // Logic
+  final val sUserChangesSink: EventSink[String] = new EventSink()
 
-  val sUserChangesSink: EventSink[String] = new EventSink()
+  var sUserChanges: Event[String] = new Event()
+  sUserChanges = sUserChangesSink
+  val merged = Event.merge(sUserChangesSink, sText)
+  var text: Behaviour[String] = merged.hold(initialValue)
+
+  merged.listen((x => {
+    println(s"received event in merged = $x")
+    println("behaviour " + text.sampleNoTrans)
+  }))
+
+  sText.listen((newVal) => {
+    domElement.value = newVal
+  })
 
   // UI - using Scalatags
   val element = input(`type` := "text", value := text.sampleNoTrans)
@@ -22,14 +34,6 @@ class TextField(
     val newVal = domElement.value.toString
     sUserChangesSink.send(newVal)
   }
-
-  // Logic
-  sUserChanges = sUserChangesSink
-  text = sUserChangesSink.hold(initialValue)
-
-  sText.listen((newVal) => {
-    domElement.value = newVal
-  })
 
   /**
     * Auxiliary constructor

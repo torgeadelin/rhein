@@ -25,6 +25,7 @@ class Button(
   eventClicked = eventClickedSink
 
   // UI - using Scalatags
+
   val domElement = div(id := label, cls := "btn btn-primary", onclick := { () =>
     {
       eventClickedSink.send(Unit)
