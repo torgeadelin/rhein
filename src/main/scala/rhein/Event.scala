@@ -1,21 +1,31 @@
 package rhein
 
 import scala.collection.mutable.ListBuffer
+import java.{util => ju}
+// Listener trait
+// must implement a unlisten method
 trait Listener {
   def unlisten()
 }
 
+// TransactionHandler[A]
+// must implement a run method
 trait TransactionHandler[A] {
   def run(trans: Transaction, a: A)
 }
 
 // Also known as Stream
+// Stream of events that fire at discrete times
 class Event[T]() {
-
+  // list with listeners on this event
   protected var listeners = new ListBuffer[TransactionHandler[T]]()
+  // ???
   protected var finalizers = new ListBuffer[Listener]()
+  // Each Event has a Node object
   var node: Node = new Node(0L);
-  protected def sampleNow(): IndexedSeq[T] = IndexedSeq()
+
+  def sampleNow(): IndexedSeq[T] = IndexedSeq()
+
   protected val firings = ListBuffer[T]()
 
   final class ListenerImplementation[T](
@@ -32,7 +42,6 @@ class Event[T]() {
     override protected def finalize() = {
       unlisten()
     }
-
   }
 
   def listen(action: Handler[T]): Listener = {
@@ -53,6 +62,7 @@ class Event[T]() {
     new ListenerImplementation[T](this, action, target)
   }
 
+  // Map Primitive
   def map[B](f: T => B): Event[B] = {
     val out: EventSink[B] = new EventSink[B]();
     val l: Listener = listen(out.node, (trans: Transaction, a: T) => {
@@ -61,15 +71,26 @@ class Event[T]() {
     out.addCleanup(l)
   }
 
-  def addCleanup(l: Listener): Event[T] = {
-    finalizers += l
-    this
-  }
-
+  // Hold Primitive
   final def hold(initValue: T): Behaviour[T] = {
     Transaction.evaluate(trans => new Behaviour[T](this, Some(initValue)))
   }
 
+  // Filter Primitive
+  def filter(f: T => Boolean): Event[T] = {
+    val ev = this
+    val out = new EventSink[T]() {
+      override def sampleNow() = ev.sampleNow().filter(f)
+    }
+    val l = listen(out.node, new TransactionHandler[T]() {
+      def run(trans: Transaction, a: T) {
+        if (f(a)) out.send(trans, a)
+      }
+    })
+    out.addCleanup(l)
+  }
+
+  // Snapshot Primitive
   def snapshot[B, C](b: Behaviour[B], f: (T, B) => C): Event[C] = {
     val ev = this
     val out = new EventSink[C]() {
@@ -87,16 +108,23 @@ class Event[T]() {
     out.addCleanup(l)
   }
 
+  def addCleanup(l: Listener): Event[T] = {
+    finalizers += l
+    this
+  }
+
+  // Removes the listeners while this event is killed
   override def finalize() {
     finalizers.foreach(_.unlisten)
   }
 }
 
 object Event {
+  // Merge primitive
   def merge[T](ea: Event[T], eb: Event[T]): Event[T] = {
     val out: EventSink[T] = new EventSink[T]() {
 
-      protected override def sampleNow(): IndexedSeq[T] =
+      override def sampleNow(): IndexedSeq[T] =
         ea.sampleNow() ++ eb.sampleNow()
     }
     val h = new TransactionHandler[T]() {
@@ -120,5 +148,4 @@ object Event {
     )
     out.addCleanup(l1).addCleanup(l2)
   }
-
 }

@@ -18,11 +18,6 @@ class TextField(
   val merged = Event.merge(sUserChangesSink, sText)
   var text: Behaviour[String] = merged.hold(initialValue)
 
-  merged.listen((x => {
-    println(s"received event in merged = $x")
-    println("behaviour " + text.sampleNoTrans)
-  }))
-
   sText.listen((newVal) => {
     domElement.value = newVal
   })
