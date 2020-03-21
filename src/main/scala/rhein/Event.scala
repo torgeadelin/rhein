@@ -1,7 +1,6 @@
 package rhein
 
 import scala.collection.mutable.ListBuffer
-import java.{util => ju}
 // Listener trait
 // must implement a unlisten method
 trait Listener {
@@ -19,13 +18,14 @@ trait TransactionHandler[A] {
 class Event[T]() {
   // list with listeners on this event
   protected var listeners = new ListBuffer[TransactionHandler[T]]()
-  // ???
+  // collects all listeners that need to be removed when this event gets killed
   protected var finalizers = new ListBuffer[Listener]()
   // Each Event has a Node object
   var node: Node = new Node(0L);
 
   def sampleNow(): IndexedSeq[T] = IndexedSeq()
 
+  // only used in the context of EventLoops
   protected val firings = ListBuffer[T]()
 
   final class ListenerImplementation[T](
@@ -80,7 +80,7 @@ class Event[T]() {
   def filter(f: T => Boolean): Event[T] = {
     val ev = this
     val out = new EventSink[T]() {
-      override def sampleNow() = ev.sampleNow().filter(f)
+      // override def sampleNow() = ev.sampleNow().filter(f)
     }
     val l = listen(out.node, new TransactionHandler[T]() {
       def run(trans: Transaction, a: T) {
@@ -94,14 +94,14 @@ class Event[T]() {
   def snapshot[B, C](b: Behaviour[B], f: (T, B) => C): Event[C] = {
     val ev = this
     val out = new EventSink[C]() {
-      override def sampleNow() =
-        ev.sampleNow().map(a => f.apply(a, b.sampleNoTrans()))
+      // override def sampleNow() =
+      //   ev.sampleNow().map(a => f.apply(a, b.sampleNoTrans()))
     }
 
     val l: Listener = listen(out.node, new TransactionHandler[T]() {
       def run(trans: Transaction, a: T) {
         out.send(trans, f(a, b.sampleNoTrans()))
-        println(b.sampleNoTrans)
+        //println(b.sampleNoTrans)
       }
     })
 
@@ -124,8 +124,8 @@ object Event {
   def merge[T](ea: Event[T], eb: Event[T]): Event[T] = {
     val out: EventSink[T] = new EventSink[T]() {
 
-      override def sampleNow(): IndexedSeq[T] =
-        ea.sampleNow() ++ eb.sampleNow()
+      // override def sampleNow(): IndexedSeq[T] =
+      // ea.sampleNow() ++ eb.sampleNow()
     }
     val h = new TransactionHandler[T]() {
       def run(trans: Transaction, a: T) {
