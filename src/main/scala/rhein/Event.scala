@@ -22,9 +22,6 @@ class Event[T]() {
   protected var finalizers = new ListBuffer[Listener]()
   // Each Event has a Node object
   var node: Node = new Node(0L);
-
-  def sampleNow(): IndexedSeq[T] = IndexedSeq()
-
   // only used in the context of EventLoops
   protected val firings = ListBuffer[T]()
 
@@ -79,9 +76,7 @@ class Event[T]() {
   // Filter Primitive
   def filter(f: T => Boolean): Event[T] = {
     val ev = this
-    val out = new EventSink[T]() {
-      // override def sampleNow() = ev.sampleNow().filter(f)
-    }
+    val out = new EventSink[T]()
     val l = listen(out.node, new TransactionHandler[T]() {
       def run(trans: Transaction, a: T) {
         if (f(a)) out.send(trans, a)
@@ -93,15 +88,11 @@ class Event[T]() {
   // Snapshot Primitive
   def snapshot[B, C](b: Behaviour[B], f: (T, B) => C): Event[C] = {
     val ev = this
-    val out = new EventSink[C]() {
-      // override def sampleNow() =
-      //   ev.sampleNow().map(a => f.apply(a, b.sampleNoTrans()))
-    }
+    val out = new EventSink[C]()
 
     val l: Listener = listen(out.node, new TransactionHandler[T]() {
       def run(trans: Transaction, a: T) {
         out.send(trans, f(a, b.sampleNoTrans()))
-        //println(b.sampleNoTrans)
       }
     })
 
@@ -122,11 +113,7 @@ class Event[T]() {
 object Event {
   // Merge primitive
   def merge[T](ea: Event[T], eb: Event[T]): Event[T] = {
-    val out: EventSink[T] = new EventSink[T]() {
-
-      // override def sampleNow(): IndexedSeq[T] =
-      // ea.sampleNow() ++ eb.sampleNow()
-    }
+    val out: EventSink[T] = new EventSink[T]()
     val h = new TransactionHandler[T]() {
       def run(trans: Transaction, a: T) {
         out.send(trans, a)

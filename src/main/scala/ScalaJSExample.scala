@@ -136,7 +136,6 @@ object ScalaJSExample {
           res
         })
         .filter(n => n >= 0)
-    println(sUpdate.sampleNow())
     valueLoop.loop(sUpdate.hold(0))
     val resultLabel: Label = new Label(valueLoop.map(x => x.toString()))
     dom.document.body.appendChild(
