@@ -22,9 +22,11 @@ class Event[T]() {
   protected var finalizers = new ListBuffer[Listener]()
   // Each Event has a Node object
   var node: Node = new Node(0L);
+
   // only used in the context of EventLoops
   protected val firings = ListBuffer[T]()
 
+  // cannot be extended
   final class ListenerImplementation[T](
       event: Event[T],
       action: TransactionHandler[T],
@@ -41,14 +43,22 @@ class Event[T]() {
     }
   }
 
+  // listener without providing a node (action is the code to be executed)
+  /**
+    * Listen for firings of this event. The returned Listener has an unlisten()
+    * method to cause the listener to be removed. This is the observer pattern.
+    */
   def listen(action: Handler[T]): Listener = {
     listen(Node.NullNode, (trans: Transaction, a: T) => { action.run(a) })
   }
 
+  // listener providing a node and a handler (action is the code to be executed)
+  // this function wraps the listener in a transaction?
   def listen(target: Node, action: TransactionHandler[T]): Listener = {
     Transaction.evaluate((trans: Transaction) => listen(target, trans, action))
   }
 
+  // main function
   def listen(
       target: Node,
       trans: Transaction,

@@ -3,7 +3,7 @@ import scala.collection.mutable.ListBuffer
 
 class EventSink[T] extends Event[T] {
   def send(a: T) {
-    Transaction.run((trans: Transaction) => { send(trans, a) })
+    Transaction.evaluate((trans: Transaction) => { send(trans, a) })
   }
 
   def send(trans: Transaction, a: T) {

@@ -14,7 +14,7 @@ class Behaviour[T](var event: Event[T], var value: Option[T]) {
 
   // Creates the behaviour dependency
   // Using a Transaction
-  Transaction.run((trans1: Transaction) => {
+  Transaction.evaluate((trans1: Transaction) => {
     this.cleanup = Some(
       event.listen(
         Node.NullNode,
