@@ -4,46 +4,67 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 import scala.scalajs.js
 import org.scalajs.dom
 import org.scalajs.dom.html
+import org.scalajs.dom.{Element}
 import dom.document
 import scalatags.JsDom.all._
 import org.scalajs.dom.{Event => DomEvent}
+import java.{util => ju}
 
 @JSExportTopLevel("ScalaJSExample")
 object ScalaJSExample {
+  import Bindings._
+
   def main(args: Array[String]) {
-    println("h")
-    // val transaction: Transaction = new Transaction()
-    // Transaction.evaluate((trans: Transaction) => {
-    //   // trans.prioritized(new Node(0), (tr: Transaction) => println("inside"))
-    //   println(trans.pq)
-    //   trans.prioritized(new Node(9), (t: Transaction) => println("prioritized"))
-    //   // runs at the end of the transaction
-    //   trans.last(() => println("hell"))
-    //   println("hello from a transaction")
 
-    // })
+    var list: BehaviourLoop[List[String]] = new BehaviourLoop()
 
-    Transaction.run((str: String) => {
-      println(str)
-    })
-    // Clear field example
-    // val clearButton: Button = new Button("Clear", "clearButton")
-    // val sClearIt: Event[String] = clearButton.eventClicked.map(u => "")
-    // val textField: TextField = new TextField(sClearIt, "Default")
-    // dom.document.body.innerHTML = ""
-    // dom.document.body.appendChild(
-    //   div(cls := "mt-3")(
-    //     h1("Clear text field example"),
-    //     clearButton.domElement,
-    //     br,
-    //     br,
-    //     textField.domElement
-    //   ).render
-    // )
+    val buttonAdd: Button = new Button("Add", "")
+
+    var allDeleteEvents: Event[(String, Int)] = new Event()
+
+    val reactive =
+      new Reactive(
+        list,
+        (x: String, index: Int) => {
+          val buttonDelete = new Button("Delete", "")
+          val delete = buttonDelete.eventClicked.map(u => ("delete", index))
+
+          allDeleteEvents = Event.merge(allDeleteEvents, delete)
+          li(x, buttonDelete.domElement)
+        }
+      )
+
+    val add = buttonAdd.eventClicked.map(u => ("add", 0))
+
+    val allEvents = Event.merge(allDeleteEvents, add)
+
+    list.loop(
+      allEvents
+        .snapshot(list, (clicks, lst: List[String]) => {
+          clicks._1 match {
+            case "add"    => "New element" :: lst
+            case "delete" => lst.take(clicks._2) ++ lst.drop(clicks._2 + 1)
+          }
+        })
+        .hold(List(""))
+    )
+
+    val l: List[Behaviour[String]] = List()
+    dom.document.body.innerHTML = ""
+    dom.document.body.appendChild(
+      div(cls := "mt-3")(
+        h1("Clear text field example"),
+        br,
+        buttonAdd.domElement,
+        //list,
+        ul(reactive.domElement)
+      ).render
+    )
 
     // // Label that always shows the current text
     // val textField2: TextField = new TextField("Hello!")
     // val label: Label = new Label(textField2.text)
+
     // dom.document.body.appendChild(
     //   div(cls := "mt-3")(
     //     h1("Label and Textfield"),
@@ -59,6 +80,7 @@ object ScalaJSExample {
     // val label3: Label = new Label(
     //   textField3.text.map((text => text.toString.reverse))
     // )
+
     // dom.document.body.appendChild(
     //   div(cls := "mt-3")(
     //     h1("Using map to Reverse"),
@@ -77,6 +99,7 @@ object ScalaJSExample {
     //   buttonB.eventClicked.map(u => "B")
     // )
     // val textField4: TextField = new TextField(merged, "")
+
     // dom.document.body.appendChild(
     //   div(cls := "mt-3")(
     //     h1("Merge example"),
@@ -96,6 +119,7 @@ object ScalaJSExample {
     //   buttonGreen.eventClicked.map(_ => "Green")
     // )
     // val labelRedOrGreen: Label = new Label(buttonsMerged.hold(""))
+
     // dom.document.body.appendChild(
     //   div(cls := "mt-3")(
     //     h1("Merge and hold example"),
@@ -109,13 +133,13 @@ object ScalaJSExample {
 
     // // Snapshot
     // val translateButton: Button = new Button("Translate", "btnTranslate")
-    // val english: TextField =
-    //   new TextField("Translate")
+    // val english: TextField = new TextField("Translate")
     // val snapshotVal: Event[String] = translateButton.eventClicked.snapshot(
     //   english.text,
     //   (u, txt: String) => txt.trim.replaceAll(" |$", "us ").trim
     // )
     // val latin: Label = new Label(snapshotVal.hold(""))
+
     // dom.document.body.appendChild(
     //   div(cls := "mt-3")(
     //     h1("Shanpshot"),
@@ -161,8 +185,8 @@ object ScalaJSExample {
     // val textFieldB: TextField = new TextField("0")
     // val a: Behaviour[Int] = textFieldA.text.map(t => t.toInt)
     // val b: Behaviour[Int] = textFieldB.text.map(t => t.toInt)
-    // def add(a: Int, b: Int): Int = a + b
-    // val lifted = a.lift(b, (p, q) => add(p, q))
+    // // def add(a: Int, b: Int): Int = a + b
+    // val lifted = a.lift(b, (p, q: Int) => p + q)
     // val res: Label = new Label(lifted.map(x => x.toString))
 
     // dom.document.body.appendChild(

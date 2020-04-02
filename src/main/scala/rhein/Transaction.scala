@@ -15,12 +15,11 @@ class Entry(var rank: Node, var action: Handler[Transaction])
     rank.compareTo(other.rank)
   }
 }
-
 class Transaction() {
 
   // must be private
-  val pq = new PriorityQueue[Entry]()
-  var last: List[Runnable] = List()
+  private val pq = new PriorityQueue[Entry]()
+  private var last: List[Runnable] = List()
 
   // add a new transaction that is prioritized and runs before everything
   def prioritized(rank: Node, action: Handler[Transaction]) {
@@ -56,13 +55,14 @@ object Transaction {
     }
   }
 
-  // not used (replaced it with evaluate == everything seems to still work)
-  // def run(code: Handler[Transaction]) {
-  //   val trans: Transaction = new Transaction()
-  //   try {
-  //     code.run(trans)
-  //   } finally {
-  //     trans.close()
-  //   }
-  // }
+  // run void?
+  //not used (replaced it with evaluate == everything seems to still work)
+  def run(code: Handler[Transaction]) {
+    val trans: Transaction = new Transaction()
+    try {
+      code.run(trans)
+    } finally {
+      trans.close()
+    }
+  }
 }

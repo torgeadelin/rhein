@@ -58,6 +58,10 @@ class Behaviour[T](var event: Event[T], var value: Option[T]) {
     changes().map(f).hold(f.apply(sampleNoTrans()))
   }
 
+  final def mapList[B](f: T => B): List[B] = {
+    sampleNoTrans().asInstanceOf[List[T]].map(f)
+  }
+
   // Lift Primitive
   final def lift[B, C](b: Behaviour[B], f: (T, B) => C): Behaviour[C] = {
     def ffa(aa: T)(bb: B) = f(aa, bb)

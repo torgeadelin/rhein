@@ -19,7 +19,7 @@ class Node(var rank: Long) extends Comparable[Node] {
     if (target != NullNode)
       listeners.remove(target)
   }
-
+  // looks like DFS
   private def ensureBiggerThan(limit: Long, visited: Set[Node]): Boolean = {
     if (rank > limit || visited.contains(this)) {
       false

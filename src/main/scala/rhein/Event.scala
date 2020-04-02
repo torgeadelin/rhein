@@ -26,6 +26,9 @@ class Event[T]() {
   // only used in the context of EventLoops
   protected val firings = ListBuffer[T]()
 
+  // Listener implementation.
+  // when creating a new listener on an event, it returns an instance of this class/
+  // and the listener can be closed/killed
   // cannot be extended
   final class ListenerImplementation[T](
       event: Event[T],
@@ -58,7 +61,10 @@ class Event[T]() {
     Transaction.evaluate((trans: Transaction) => listen(target, trans, action))
   }
 
-  // main function
+  // attaching a listener to this event.
+  // step 1 - linking this node to the new target node
+  // step 2 - adding the action to the list  of transaction handlers called listeners (functions -- the code
+  // that is given in the listener)
   def listen(
       target: Node,
       trans: Transaction,
