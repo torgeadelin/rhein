@@ -13,6 +13,7 @@ import scalatags.JsDom.all._
 class Button(
     val text: String,
     val label: String,
+    var eventClicked: Event[_],
     val enabled: Behaviour[Boolean]
 ) {
 
@@ -20,7 +21,6 @@ class Button(
   println(s"$label Button was created")
 
   // Logic
-  var eventClicked: Event[Unit] = new Event()
   var eventClickedSink: EventSink[Unit] = new EventSink()
   eventClicked = eventClickedSink
 
@@ -39,7 +39,10 @@ class Button(
     * @return
     */
   def this(text: String, label: String) {
-    this(text, label, new Behaviour(Some(true)))
+    this(text, label, new Event(), new Behaviour(Some(true)))
+  }
+  def this(text: String, stream: Event[_]) {
+    this(text, "", stream, new Behaviour(Some(true)))
   }
 
   /*

@@ -10,54 +10,90 @@ import scalatags.JsDom.all._
 import org.scalajs.dom.{Event => DomEvent}
 import java.{util => ju}
 
+class Task(var description: String, var isDone: Boolean) {
+  val id: String = ju.UUID.randomUUID.toString
+}
+
+case class Message[T](var action: String, var value: T)
+
 @JSExportTopLevel("ScalaJSExample")
 object ScalaJSExample {
   import Bindings._
 
   def main(args: Array[String]) {
+    var stream: EventSink[Message[Task]] = new EventSink()
 
-    var list: BehaviourLoop[List[String]] = new BehaviourLoop()
-
-    val buttonAdd: Button = new Button("Add", "")
-
-    var allDeleteEvents: Event[(String, Int)] = new Event()
-
-    val reactive =
-      new Reactive(
-        list,
-        (x: String, index: Int) => {
-          val buttonDelete = new Button("Delete", "")
-          val delete = buttonDelete.eventClicked.map(u => ("delete", index))
-
-          allDeleteEvents = Event.merge(allDeleteEvents, delete)
-          li(x, buttonDelete.domElement)
+    var loopState = new EventLoop[List[Task]]
+    var cState = loopState.hold(List());
+    loopState.loop(
+      stream.snapshot(
+        cState,
+        (event, _state: List[Task]) => {
+          event.action match {
+            case "add" => {
+              println("add")
+              println(event.value)
+              event.value :: _state
+            }
+            case "remove" => {
+              println("remove")
+              println(event.value)
+              _state.filter(p => p.id != event.value.id)
+            }
+          }
         }
       )
-
-    val add = buttonAdd.eventClicked.map(u => ("add", 0))
-
-    val allEvents = Event.merge(allDeleteEvents, add)
-
-    list.loop(
-      allEvents
-        .snapshot(list, (clicks, lst: List[String]) => {
-          clicks._1 match {
-            case "add"    => "New element" :: lst
-            case "delete" => lst.take(clicks._2) ++ lst.drop(clicks._2 + 1)
-          }
-        })
-        .hold(List(""))
     )
+
+    val appleTask = new Task("Buy apples", false)
+    val bananaTask = new Task("Buy bananas", true)
+
+    // stream.send(new Message[Task]("add", appleTask))
+    // stream.send(new Message[Task]("add", bananaTask))
+    // println(cState.sampleNoTrans())
+    // stream.send(new Message[Task]("remove", appleTask))
+    val textField = new TextField("")
+
+    val addButton = new Button("+", "")
+    // addButton.eventClicked.listen(u => {
+    //   print("id =", cState.sampleNoTrans().head.id)
+    // })
+
+    addButton.eventClicked.snapshot(textField.text, (click, text: String) => {
+      stream.send(new Message[Task]("add", new Task(text, false)))
+      ""
+    })
+
+    val listing = new Listing[Task](cState, elem => {
+
+      val delete = new Button("-", "")
+      delete.eventClicked.listen(u =>
+        stream.send(new Message[Task]("remove", elem))
+      )
+      div(cls := "d-flex align-items-center")(
+        div(cls := "d-flex align-items-center border p-2")(
+          span(cls := "mr-2", elem.description),
+          if (elem.isDone)
+            span(cls := "badge badge-pill badge-warning", "Ongoing")
+          else span(cls := "badge badge-pill badge-success", "Done")
+        ),
+        delete.domElement(cls := "btn btn-light ml-2")
+      )
+    })
 
     val l: List[Behaviour[String]] = List()
     dom.document.body.innerHTML = ""
     dom.document.body.appendChild(
       div(cls := "mt-3")(
-        h1("Clear text field example"),
+        h1("Todo Application"),
         br,
-        buttonAdd.domElement,
-        //list,
-        ul(reactive.domElement)
+        div(cls := "d-flex align-items-center")(
+          addButton.domElement,
+          textField.domElement
+        ),
+        br,
+        br,
+        listing.domElement
       ).render
     )
 

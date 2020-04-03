@@ -23,7 +23,8 @@ class TextField(
   })
 
   // UI - using Scalatags
-  val element = input(`type` := "text", value := text.sampleNoTrans)
+  val element =
+    input(`type` := "text", cls := "form-control", value := text.sampleNoTrans)
   var domElement = element.render
   domElement.oninput = (event: DomEvent) => {
     val newVal = domElement.value.toString
