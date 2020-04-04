@@ -10,41 +10,40 @@ import scalatags.JsDom.all._
   * @param label
   * @param enabled
   */
+class EmptyMessage extends Message
+
 class Button(
     val text: String,
     val label: String,
-    var eventClicked: Event[_],
-    val enabled: Behaviour[Boolean]
+    val enabled: Behaviour[Boolean],
+    var valueToEmit: Message = new EmptyMessage()
 ) {
 
-  // Debug
-  println(s"$label Button was created")
-
   // Logic
-  var eventClickedSink: EventSink[Unit] = new EventSink()
+  var eventClicked: Event[Message] = new Event()
+  var eventClickedSink: EventSink[Message] = new EventSink()
   eventClicked = eventClickedSink
 
   // UI - using Scalatags
 
   val domElement = div(id := label, cls := "btn btn-primary", onclick := { () =>
     {
-      eventClickedSink.send(Unit)
+      eventClickedSink.send(valueToEmit)
     }
   })(text)
 
-  /**
-    * Auxiliary Constructor
-    *
-    * @param label
-    * @return
-    */
-  def this(text: String, label: String) {
-    this(text, label, new Event(), new Behaviour(Some(true)))
-  }
-  def this(text: String, stream: Event[_]) {
-    this(text, "", stream, new Behaviour(Some(true)))
+  def attachEvent(event: EventSink[_], newValueToEmit: Message) {
+    valueToEmit = newValueToEmit
+    eventClickedSink = event.asInstanceOf[EventSink[Message]]
   }
 
+  def this(text: String, label: String) {
+    this(text, label, new Behaviour(Some(true)), new EmptyMessage())
+  }
+
+  def this(text: String) {
+    this(text, "", new Behaviour(Some(true)), new EmptyMessage())
+  }
   /*
   TODO Implement enable logic for then enabled Behaviour
  */

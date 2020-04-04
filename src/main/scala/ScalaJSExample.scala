@@ -1,5 +1,5 @@
 import rhein._
-import rhein.ui._
+// import rhein.ui._
 import scala.scalajs.js.annotation.JSExportTopLevel
 import scala.scalajs.js
 import org.scalajs.dom
@@ -10,93 +10,15 @@ import scalatags.JsDom.all._
 import org.scalajs.dom.{Event => DomEvent}
 import java.{util => ju}
 
-class Task(var description: String, var isDone: Boolean) {
-  val id: String = ju.UUID.randomUUID.toString
-}
-
-case class Message[T](var action: String, var value: T)
-
-@JSExportTopLevel("ScalaJSExample")
-object ScalaJSExample {
-  import Bindings._
+// import examples.todoApp.TodoApp
+import examples.gameOfLife.GameOfLife
+@JSExportTopLevel("Main")
+object Main {
+  // import Bindings._
 
   def main(args: Array[String]) {
-    var stream: EventSink[Message[Task]] = new EventSink()
-
-    var loopState = new EventLoop[List[Task]]
-    var cState = loopState.hold(List());
-    loopState.loop(
-      stream.snapshot(
-        cState,
-        (event, _state: List[Task]) => {
-          event.action match {
-            case "add" => {
-              println("add")
-              println(event.value)
-              event.value :: _state
-            }
-            case "remove" => {
-              println("remove")
-              println(event.value)
-              _state.filter(p => p.id != event.value.id)
-            }
-          }
-        }
-      )
-    )
-
-    val appleTask = new Task("Buy apples", false)
-    val bananaTask = new Task("Buy bananas", true)
-
-    // stream.send(new Message[Task]("add", appleTask))
-    // stream.send(new Message[Task]("add", bananaTask))
-    // println(cState.sampleNoTrans())
-    // stream.send(new Message[Task]("remove", appleTask))
-    val textField = new TextField("")
-
-    val addButton = new Button("+", "")
-    // addButton.eventClicked.listen(u => {
-    //   print("id =", cState.sampleNoTrans().head.id)
-    // })
-
-    addButton.eventClicked.snapshot(textField.text, (click, text: String) => {
-      stream.send(new Message[Task]("add", new Task(text, false)))
-      ""
-    })
-
-    val listing = new Listing[Task](cState, elem => {
-
-      val delete = new Button("-", "")
-      delete.eventClicked.listen(u =>
-        stream.send(new Message[Task]("remove", elem))
-      )
-      div(cls := "d-flex align-items-center")(
-        div(cls := "d-flex align-items-center border p-2")(
-          span(cls := "mr-2", elem.description),
-          if (elem.isDone)
-            span(cls := "badge badge-pill badge-warning", "Ongoing")
-          else span(cls := "badge badge-pill badge-success", "Done")
-        ),
-        delete.domElement(cls := "btn btn-light ml-2")
-      )
-    })
-
-    val l: List[Behaviour[String]] = List()
-    dom.document.body.innerHTML = ""
-    dom.document.body.appendChild(
-      div(cls := "mt-3")(
-        h1("Todo Application"),
-        br,
-        div(cls := "d-flex align-items-center")(
-          addButton.domElement,
-          textField.domElement
-        ),
-        br,
-        br,
-        listing.domElement
-      ).render
-    )
-
+    // TodoApp.run()
+    val game = new GameOfLife()
     // // Label that always shows the current text
     // val textField2: TextField = new TextField("Hello!")
     // val label: Label = new Label(textField2.text)
