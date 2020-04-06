@@ -151,4 +151,16 @@ object Event {
     )
     out.addCleanup(l1).addCleanup(l2)
   }
+
+  def interval(delay: Long, period: Long): Event[Unit] = {
+    val out: EventSink[Unit] = new EventSink()
+    val t = new java.util.Timer()
+
+    val task = new java.util.TimerTask {
+      def run() = out.send(Unit)
+    }
+    t.schedule(task, delay, period)
+
+    out
+  }
 }
