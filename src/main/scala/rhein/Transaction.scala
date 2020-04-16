@@ -16,6 +16,10 @@ trait Handler[T] {
 /**
   * Helper class to create the priority queue
   *
+  * REF! - Based on
+  * https://github.com/SodiumFRP/sodium/blob/master
+  * /scala/src/main/scala/sodium/Transaction.scala
+  * 
   * @param rank
   * @param action
   */

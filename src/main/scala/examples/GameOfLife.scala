@@ -45,18 +45,15 @@ class GameOfLife {
     ListBuffer(0, 0, 1, 1)
   )
 
-
-
   // The speed of transition between states
   val INTERVAL = 100
   var WIDTH: Int = 30
   var HEIGHT: Int = 30
 
-
   // choose a pattern between the two provided
   // if the second parameter == true => random
   //run(pattern1, true)
-  
+
   // Uncomment this line to run the simulation
   // witouth FRP. Don't forget to comment the method above in order to
   // prevent running two simulations at the same time.
@@ -68,7 +65,7 @@ class GameOfLife {
     // Configuration variables
     var world: World = new World()
 
-    if(random) {
+    if (random) {
       world = generateWorld(WIDTH, HEIGHT)
     } else {
       WIDTH = initialPattern.length
@@ -76,7 +73,7 @@ class GameOfLife {
 
       world = createWorld(initialPattern)
     }
-    
+
     // Event stream that emits a one Unit event at interval specified
     var tickStream: Event[Unit] = Event.interval(INTERVAL, INTERVAL)
 
@@ -161,21 +158,21 @@ class GameOfLife {
       )
     )
   }
-  
-    /**
+
+  /**
     * Generate a random world given the size
     * @param width
     * @param height
     * @return
     */
   def generateWorld(width: Int, height: Int) = {
-    val r =  new ju.Random()
+    val r = new ju.Random()
     val newWorld: World = ListBuffer.fill(WIDTH * HEIGHT)(false)
     for (y <- 0 until width) {
       for (x <- 0 until height) {
-          val rand = r.nextFloat()
-          newWorld(y * WIDTH + x) = if (rand < 0.5) false else true
-        
+        val rand = r.nextFloat()
+        newWorld(y * WIDTH + x) = if (rand < 0.5) false else true
+
       }
     }
     newWorld
@@ -206,7 +203,7 @@ class GameOfLife {
     * @param initialPattern
     */
   def runWithouthFRP(initialPattern: ListBuffer[ListBuffer[Int]]) {
-    
+
     var worldState = createWorld(initialPattern)
     var activeState = true;
 
@@ -226,19 +223,23 @@ class GameOfLife {
     dom.document.body.appendChild(pauseButton)
 
     scala.scalajs.js.timers.setInterval(INTERVAL) {
-          val t0 = System.nanoTime()
+      val t0 = System.nanoTime()
 
-        if (activeState) {
-          worldState = updateWorld(worldState, WIDTH, HEIGHT);
-          var grid = makeGrid(worldState).render
-          dom.document.getElementById("root").replaceChild(grid, gridNode)
-          gridNode = grid
-        }
-        val t1 = System.nanoTime()
-         println(t1 - t0)
+      if (activeState) {
+        worldState = updateWorld(worldState, WIDTH, HEIGHT);
+        var grid = makeGrid(worldState).render
+        dom.document.getElementById("root").replaceChild(grid, gridNode)
+        gridNode = grid
+      }
+      val t1 = System.nanoTime()
+      println(t1 - t0)
     }
-    
+
   }
+
+  // FRP Logic
+  // REF! - Functions based on
+  // https://github.com/gabriellesc/FRP-intro/blob/master/FRP-GOL-init/app.js
 
   /**
     * Returns true if cell at position x, y is alive, false otherwise
@@ -330,6 +331,5 @@ class GameOfLife {
 
     newWorld
   }
-
 
 }

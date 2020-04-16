@@ -32,18 +32,14 @@ object Main {
       ).render
     )
   
-    //========================================================================================
-    /*                                                                                      *
-    *                                     Examples                                          *
-    *                                                                                       */
-    //========================================================================================
+    // Examples (applications + Example of Primitives)
 
-    // Applications
+    // 1. Applications
     TodoApp.run()
     var game = new GameOfLife()
     game.run(new mutable.ListBuffer(), true)
 
-    // Primitives in action
+    // 2. Primitives in action
 
     // Label that always shows the current text
     val textField2: TextField = new TextField("Hello!")

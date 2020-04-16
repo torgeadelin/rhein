@@ -9,6 +9,9 @@ import scala.collection.mutable.HashSet
   * Used to make sure events are executed
   * in proper order
   *
+  * REF! - Based on:
+  * https://github.com/SodiumFRP/sodium/blob/master/scala/src/main/scala/sodium/Node.scala
+  *
   * @param rank
   */
 class Node(var rank: Long) extends Comparable[Node] {

@@ -7,9 +7,8 @@ import scala.scalajs.js.annotation._
 import org.scalajs.dom
 import org.scalajs.dom._
 
-
 /**
-  * Value that will be emitted 
+  * Value that will be emitted
   * when emitting events in the todo application
   * @param action can either be add or remove
   * @param value will specify which value in the list will the action will be taken on
@@ -18,7 +17,7 @@ class TodoMessage[T](var action: String, var value: T) extends Message
 
 /**
   * Simmple Task class to model a task
-  * @param description 
+  * @param description
   * @param isDone
   */
 class Task(var description: String, var isDone: Boolean) {
@@ -30,6 +29,7 @@ class Task(var description: String, var isDone: Boolean) {
   */
 object TodoApp {
   import Bindings._
+
   /**
     * UI component for a Task
     * CSS classes are part of Bootstrap v4.0
@@ -51,7 +51,6 @@ object TodoApp {
     * Method to initialise and run
     * the todo application.
     */
-
   def run() {
     // UI components
     val buttonAdd = new Button("+")
@@ -59,7 +58,7 @@ object TodoApp {
 
     /**
       * Stream of events
-      * When the add button is clicked, a new event is 
+      * When the add button is clicked, a new event is
       */
     val todoEvents = buttonAdd.eventClicked
       .snapshot(taskTextField.text, (click, text: String) => {
@@ -71,13 +70,13 @@ object TodoApp {
     val cState = new BehaviourLoop[List[Task]]
     val updates = todoEvents.snapshot(cState, (event, _state: List[Task]) => {
       event.action match {
-            case "add" => {
-              event.value :: _state
-            }
-            case "remove" => {
-              _state.filter(p => p.id != event.value.id)
-            }
-          }
+        case "add" => {
+          event.value :: _state
+        }
+        case "remove" => {
+          _state.filter(p => p.id != event.value.id)
+        }
+      }
     })
     cState.loop(updates.hold(List()))
 
@@ -89,7 +88,6 @@ object TodoApp {
       todoItem(task, buttonDelete)
     })
 
-  
     //Rendering
     dom.document.body.appendChild(
       div(cls := "mt-2")(
