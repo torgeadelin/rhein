@@ -3,39 +3,62 @@ package rhein
 import scala.collection.mutable.ListBuffer
 // Listener trait
 // must implement a unlisten method
+
+/**
+  * Listener trait
+  */
 trait Listener {
   def unlisten()
 }
 
 // TransactionHandler[A]
 // must implement a run method
+
+/**
+  * Transaction Handler is used to implement listeners
+  */
 trait TransactionHandler[A] {
   def run(trans: Transaction, a: A)
 }
 
 // Also known as Stream
 // Stream of events that fire at discrete times
+
+/**
+  * Event, also known as Stream in other FRP systems,
+  * is a stream of events that fire at discrete points
+  * in time
+  *
+  */
 class Event[T]() {
-  // list with listeners on this event
+  // List with listeners on this event
   protected var listeners = new ListBuffer[TransactionHandler[T]]()
-  // collects all listeners that need to be removed when this event gets killed
+  // Collects all listeners that need to be removed when this event gets killed
   protected var finalizers = new ListBuffer[Listener]()
-  // Each Event has a Node object
+  // Uset to identify each event
   var node: Node = new Node(0L);
 
-  // only used in the context of EventLoops
   protected val firings = ListBuffer[T]()
 
-  // Listener implementation.
-  // when creating a new listener on an event, it returns an instance of this class/
-  // and the listener can be closed/killed
-  // cannot be extended
+  /**
+    * Listener implementation. When creating a new listener on an event,
+    * it returns an instance of this class and then the
+    * listener can be closed/killed
+    *
+    * @param event
+    * @param action
+    * @param target
+    */
   final class ListenerImplementation[T](
       event: Event[T],
       action: TransactionHandler[T],
       target: Node
   ) extends Listener {
 
+    /**
+      * Unlisten method that breaks the dependency
+      * relation
+      */
     def unlisten() = {
       event.listeners -= action
       event.node.unlinkTo(target)
@@ -46,25 +69,37 @@ class Event[T]() {
     }
   }
 
-  // listener without providing a node (action is the code to be executed)
   /**
     * Listen for firings of this event. The returned Listener has an unlisten()
     * method to cause the listener to be removed. This is the observer pattern.
+    * @param action
+    * @return
     */
   def listen(action: Handler[T]): Listener = {
     listen(Node.NullNode, (trans: Transaction, a: T) => { action.run(a) })
   }
 
-  // listener providing a node and a handler (action is the code to be executed)
-  // this function wraps the listener in a transaction?
+  /**
+    * Listeners used for implementing primitives
+    * @param target
+    * @param action
+    * @return
+    */
   def listen(target: Node, action: TransactionHandler[T]): Listener = {
     Transaction.evaluate((trans: Transaction) => listen(target, trans, action))
   }
 
-  // attaching a listener to this event.
-  // step 1 - linking this node to the new target node
-  // step 2 - adding the action to the list  of transaction handlers called listeners (functions -- the code
-  // that is given in the listener)
+  /**
+    * The final listener method of the whole listen chain
+    * that creates dependencies and adds actions to the
+    * list of actions of this event
+    *
+    *
+    * @param target
+    * @param trans
+    * @param action
+    * @return listener implementation that can be used to unlisten
+    */
   def listen(
       target: Node,
       trans: Transaction,
@@ -75,7 +110,12 @@ class Event[T]() {
     new ListenerImplementation[T](this, action, target)
   }
 
-  // Map Primitive
+  /**
+    * Map Primitive
+    *
+    * @param f transformation function
+    * @return
+    */
   def map[B](f: T => B): Event[B] = {
     val out: EventSink[B] = new EventSink[B]();
     val l: Listener = listen(out.node, (trans: Transaction, a: T) => {
@@ -84,28 +124,39 @@ class Event[T]() {
     out.addCleanup(l)
   }
 
-  // Hold Primitive
+  /**
+    * Hold primitive
+    *
+    * @param initValue required as behaviours always have a value
+    * @return
+    */
   final def hold(initValue: T): Behaviour[T] = {
     Transaction.evaluate(trans => new Behaviour[T](this, Some(initValue)))
   }
 
-  // Filter Primitive
+  /**
+    * Filter primitive
+    *
+    * @param f filtering function
+    * @return
+    */
   def filter(f: T => Boolean): Event[T] = {
-    val ev = this
     val out = new EventSink[T]()
-    val l = listen(out.node, new TransactionHandler[T]() {
-      def run(trans: Transaction, a: T) {
-        if (f(a)) out.send(trans, a)
-      }
+    val l = listen(out.node, (trans: Transaction, a: T) => {
+      if (f(a)) out.send(trans, a)
     })
     out.addCleanup(l)
   }
 
-  // Snapshot Primitive
+  /**
+    * Snapshot primitive
+    *
+    * @param b behaviour being snapshoted
+    * @param f combination function
+    * @return
+    */
   def snapshot[B, C](b: Behaviour[B], f: (T, B) => C): Event[C] = {
-    val ev = this
     val out = new EventSink[C]()
-
     val l: Listener = listen(out.node, new TransactionHandler[T]() {
       def run(trans: Transaction, a: T) {
         out.send(trans, f(a, b.sampleNoTrans()))
@@ -115,19 +166,38 @@ class Event[T]() {
     out.addCleanup(l)
   }
 
+  /**
+    * Helper that adds listeners to
+    * the list of finalizers of this eventg
+    *
+    * @param l
+    * @return
+    */
   def addCleanup(l: Listener): Event[T] = {
     finalizers += l
     this
   }
 
-  // Removes the listeners while this event is killed
+  /**
+    * Removes the listeners while this event is killed
+    */
   override def finalize() {
     finalizers.foreach(_.unlisten)
   }
 }
 
+/**
+  * Companion Object
+  */
 object Event {
-  // Merge primitive
+
+  /**
+    * Merge primitive
+    *
+    * @param ea
+    * @param eb
+    * @return
+    */
   def merge[T](ea: Event[T], eb: Event[T]): Event[T] = {
     val out: EventSink[T] = new EventSink[T]()
     val h = new TransactionHandler[T]() {
@@ -152,6 +222,13 @@ object Event {
     out.addCleanup(l1).addCleanup(l2)
   }
 
+  /**
+    * Special event interval, that emits at a given rate
+    *
+    * @param delay
+    * @param period
+    * @return
+    */
   def interval(delay: Long, period: Long): Event[Unit] = {
     val out: EventSink[Unit] = new EventSink()
     val t = new java.util.Timer()

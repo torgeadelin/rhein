@@ -6,25 +6,35 @@ import scalatags.JsDom.all._
 
 import rhein._
 
+/**
+  * Bindings is just a wrapper
+  * for implicit functions that convert
+  * behaviours into dom elements
+  */
 object Bindings {
 
-  implicit def SignalStr[T](r: Behaviour[T])(
+  /**
+    * Converts Behaviour that is used in the
+    * context of a dom element in scalatags to 
+    * an actual dom element (Modifier)
+    *
+    * @return Modifier
+    */
+
+  implicit def BehaviourToDom[T](r: Behaviour[T])(
       implicit f: T => Modifier
   ): Modifier = {
     var initialValue = r.sampleNoTrans()
-    // if (r.isInstanceOf[Behaviour[scala.Iterable[Any]]]) {
-    //   val initialValue = r.mapList(l => li(l))
-    // }
 
     // UI - using Scalatags
-    val element = p(initialValue)
+    val element = span(initialValue)
     var domElement = element.render
 
     // Logic
     var listener = r
       .changes()
       .listen(x => {
-        val newLast = p(x).render
+        val newLast = span(x).render
         domElement.parentElement.replaceChild(newLast, domElement)
         domElement = newLast
       })
@@ -32,7 +42,14 @@ object Bindings {
     domElement
   }
 
-  implicit def RxAttrValue[T: AttrValue] = new AttrValue[Behaviour[T]] {
+  /**
+    * Converts Behaviour that is used in the
+    * context of a attribute value in scalatags to 
+    * an actual attribute value
+    *
+    * @return AttrValue
+    */
+  implicit def BehaviourToAttrValue[T: AttrValue] = new AttrValue[Behaviour[T]] {
     def apply(t: Element, a: Attr, r: Behaviour[T]): Unit = {
       r.changes()
         .listen((newVal) => {
@@ -41,7 +58,14 @@ object Bindings {
     }
   }
 
-  implicit def RxStyleValue[T: StyleValue] =
+/**
+  * Converts Behaviour that is used in the
+  * context of a style value in scalatags to 
+  * an actual style value
+  *
+  * @return StyleValue
+  */
+  implicit def BehaviourToStyleValue[T: StyleValue] =
     new StyleValue[Behaviour[T]] {
       def apply(t: Element, s: Style, r: Behaviour[T]): Unit = {
         r.changes()

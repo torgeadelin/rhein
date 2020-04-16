@@ -5,10 +5,13 @@ import rhein._
 import rhein.ui.{Listing, Button}
 import scalatags.JsDom.all._
 import scala.scalajs.js._
+import org.scalajs.dom.{Event => DomEvent}
 import org.scalajs.dom
 import scala.collection.mutable.ListBuffer
 import scalatags.JsDom
 import scala.io.Source
+import scala.util.Random
+import java.{util => ju}
 
 /**
   * Class representing Game Of Life
@@ -42,17 +45,38 @@ class GameOfLife {
     ListBuffer(0, 0, 1, 1)
   )
 
+
+
   // The speed of transition between states
-  val INTERVAL = 500L
-  var WIDTH: Int = 0
-  var HEIGHT: Int = 0
+  val INTERVAL = 100
+  var WIDTH: Int = 30
+  var HEIGHT: Int = 30
+
+
+  // choose a pattern between the two provided
+  // if the second parameter == true => random
+  //run(pattern1, true)
+  
+  // Uncomment this line to run the simulation
+  // witouth FRP. Don't forget to comment the method above in order to
+  // prevent running two simulations at the same time.
+
+  //runWithouthFRP()
 
   // Run method that starts the game of life
-  def run(initialPattern: ListBuffer[ListBuffer[Int]]) {
+  def run(initialPattern: ListBuffer[ListBuffer[Int]], random: Boolean) {
     // Configuration variables
-    WIDTH = pattern2.length
-    HEIGHT = pattern2(0).length
+    var world: World = new World()
 
+    if(random) {
+      world = generateWorld(WIDTH, HEIGHT)
+    } else {
+      WIDTH = initialPattern.length
+      HEIGHT = initialPattern(0).length
+
+      world = createWorld(initialPattern)
+    }
+    
     // Event stream that emits a one Unit event at interval specified
     var tickStream: Event[Unit] = Event.interval(INTERVAL, INTERVAL)
 
@@ -79,7 +103,8 @@ class GameOfLife {
       * of Listing UI Component
       */
     var eventLoop: EventLoop[List[World]] = new EventLoop()
-    var cState = eventLoop.hold(List(createWorld(pattern2)))
+    var cState = eventLoop.hold(List(world))
+
     eventLoop.loop(tickStream.snapshot(cState, (event, _state: List[World]) => {
       List(updateWorld(_state.head, WIDTH, HEIGHT))
     }))
@@ -92,11 +117,11 @@ class GameOfLife {
       })
 
     // Appending all UI components to the DOM
-    dom.document.body.innerHTML = ""
     dom.document.body.appendChild(
       div(cls := "mt-3")(
         h1("Game of Life"),
         grid.domElement,
+        br,
         buttonPause.domElement
       ).render
     )
@@ -136,9 +161,28 @@ class GameOfLife {
       )
     )
   }
+  
+    /**
+    * Generate a random world given the size
+    * @param width
+    * @param height
+    * @return
+    */
+  def generateWorld(width: Int, height: Int) = {
+    val r =  new ju.Random()
+    val newWorld: World = ListBuffer.fill(WIDTH * HEIGHT)(false)
+    for (y <- 0 until width) {
+      for (x <- 0 until height) {
+          val rand = r.nextFloat()
+          newWorld(y * WIDTH + x) = if (rand < 0.5) false else true
+        
+      }
+    }
+    newWorld
+  }
 
   /**
-    * Generate World state given an initial pattern / configuration for
+    * Create World state given an initial pattern / configuration for
     * the map / world
     * @param initial  Initial pattern
     * @return World state with initial pattern
@@ -154,6 +198,46 @@ class GameOfLife {
       }
     }
     newWorld
+  }
+
+  /**
+    * Run the simulation without FRP
+    *
+    * @param initialPattern
+    */
+  def runWithouthFRP(initialPattern: ListBuffer[ListBuffer[Int]]) {
+    
+    var worldState = createWorld(initialPattern)
+    var activeState = true;
+
+    val root = dom.document.createElement("div")
+    root.id = "root"
+
+    var gridNode = makeGrid(worldState).render
+
+    val pauseButton = dom.document.createElement("button")
+    pauseButton.addEventListener("click", (ev: DomEvent) => {
+      activeState = !activeState
+    })
+
+    root.appendChild(gridNode)
+
+    dom.document.body.appendChild(root)
+    dom.document.body.appendChild(pauseButton)
+
+    scala.scalajs.js.timers.setInterval(INTERVAL) {
+          val t0 = System.nanoTime()
+
+        if (activeState) {
+          worldState = updateWorld(worldState, WIDTH, HEIGHT);
+          var grid = makeGrid(worldState).render
+          dom.document.getElementById("root").replaceChild(grid, gridNode)
+          gridNode = grid
+        }
+        val t1 = System.nanoTime()
+         println(t1 - t0)
+    }
+    
   }
 
   /**
@@ -246,10 +330,6 @@ class GameOfLife {
 
     newWorld
   }
-  // def toggleCell(world: World, x: Int, y: Int, width: Int, height: Int) = {
-  //   var newWorld = world.clone();
-  //   newWorld(y * width + x) = !world(y * width + x);
-  //   newWorld
-  // }
+
 
 }

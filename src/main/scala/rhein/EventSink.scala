@@ -2,12 +2,23 @@ package rhein
 import scala.collection.mutable.ListBuffer
 
 class EventSink[T] extends Event[T] {
-  // do this in a new transaction
+
+  /**
+    * After creating the dependencies,
+    * loop with this function.
+    * @param a
+    */
   def send(a: T) {
     Transaction.evaluate((trans: Transaction) => { send(trans, a) })
   }
-  // get all listener actions and send
-  // this payload down the pipe
+
+  /**
+    * Get all listener actions and send
+    * this payload down the pipe
+    *
+    * @param trans
+    * @param a
+    */
   def send(trans: Transaction, a: T) {
     try {
       this.listeners

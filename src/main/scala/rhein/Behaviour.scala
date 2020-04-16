@@ -1,9 +1,12 @@
 package rhein
 
-// Behaviour - time varying value
-// Differentiates from an Event by always having a value => continuous
+/**
+  * Behaviour - time varying value
+  * Differentiates from an Event by always having a value => continuous
+  * @param event
+  * @param value
+  */
 class Behaviour[T](var event: Event[T], var value: Option[T]) {
-  // fires once with the behaviour current value in the transaction where it was invoked
   var valueUpdate: Option[T] = None
   var cleanup: Option[Listener] = None
 
@@ -14,12 +17,15 @@ class Behaviour[T](var event: Event[T], var value: Option[T]) {
 
   // Creates the behaviour dependency
   // Using a Transaction
+  // Listens for changes on the injected event stream
   Transaction.evaluate((trans1: Transaction) => {
     this.cleanup = Some(
       event.listen(
         Node.NullNode,
         trans1,
         (trans2: Transaction, a: T) => {
+          // make sure the updates happen at the end of a transaction
+          // and before any new one
           if (Behaviour.this.valueUpdate.isEmpty) {
             trans2.last(new Runnable() {
               def run() {
@@ -34,51 +40,51 @@ class Behaviour[T](var event: Event[T], var value: Option[T]) {
     )
   })
 
-  // Sample the value without a transaction
+  /**
+    * Sample the current value without a transaction
+    *
+    * @return the current value of the behaviour
+    */
   def sampleNoTrans(): T = value.get
 
-  // Get the new value update
+  /**
+    * Returns the newst value of the behaviour
+    *
+    * @return
+    */
   def newValue(): T = {
     valueUpdate.getOrElse(sampleNoTrans)
   }
 
-  // Returns an event with all changes that have been made to this
-  // Behaviour
-  // gives you the discrete updates to a behaviour.
-  // effectively the inverse of hold()
-  // returns the firing only after you start listening not from the beginning
-  // helps with operational code
-
+  /**
+    * Returns an event with all changes that have been made to this
+    * Behaviour. Gives you the discrete updates to a behaviour (effectively the inverse of hold())
+    * @return
+    */
   def changes(): Event[T] = {
     event
   }
 
-  // Map Primitive
+  /**
+    * Map primitive
+    *
+    * @param f transformation function
+    * @return
+    */
   final def map[B](f: T => B): Behaviour[B] = {
     changes().map(f).hold(f.apply(sampleNoTrans()))
   }
 
-  final def mapList[B](f: T => B): List[B] = {
-    sampleNoTrans().asInstanceOf[List[T]].map(f)
-  }
-
-  // Lift Primitive
+  /**
+    * Lift primitive
+    *
+    * @param b to be combined with
+    * @param f combination function
+    * @return
+    */
   final def lift[B, C](b: Behaviour[B], f: (T, B) => C): Behaviour[C] = {
     def ffa(aa: T)(bb: B) = f(aa, bb)
     Behaviour.apply(map(ffa), b)
-  }
-
-  def values(): Event[T] = {
-    new Event[T]() {
-      override def listen(
-          target: Node,
-          trans: Transaction,
-          action: TransactionHandler[T]
-      ): Listener = {
-        action.run(trans, value.get)
-        changes().listen(target, trans, action)
-      }
-    }
   }
 
   override def finalize() = {
@@ -87,10 +93,21 @@ class Behaviour[T](var event: Event[T], var value: Option[T]) {
 
 }
 
+/**
+  * Companion Object
+  */
 object Behaviour {
+
+  /**
+    * Helper constructor for the lift primitive
+    * Combines two behaviours together
+    *
+    * @param bf
+    * @param ba
+    * @return
+    */
   def apply[T, B](bf: Behaviour[T => B], ba: Behaviour[T]): Behaviour[B] = {
     val out = new EventSink[B]()
-
     var fired = false
     def h(trans: Transaction) {
       if (!fired) {

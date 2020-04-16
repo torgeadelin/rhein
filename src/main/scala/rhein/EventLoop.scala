@@ -1,5 +1,10 @@
 package rhein
 
+/**
+  * Event Loop provides a way to create circular dependencies
+  * and also helps in creating accumulators
+  *
+  */
 class EventLoop[T] extends EventWithSend[T] {
 
   private var ea_out: Option[Event[T]] = None
