@@ -8,6 +8,9 @@
 
 Rhein is a data-propagation library based on Functional Reactive Programming abstractions such as Events and Behaviours that helps you to develop interactive applications using a conceptual-declarative approach that brings numerous benefits to the quality of the appli- cations and also solves several problems the mainstream methods of development of this type of software produce.
 
+# Thesis / Report
+[Read the report here](https://github.com/torgeadelin/rhein/blob/master/Final_Report.pdf)
+
 ## Examples / Demo
 https://torgeadelin.github.io/rhein/
 
